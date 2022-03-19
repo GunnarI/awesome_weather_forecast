@@ -1,4 +1,4 @@
-enum TimeOfDay {
+enum TimePeriodOfDay {
   morning,
   day,
   evening,
@@ -8,10 +8,10 @@ class WeatherDay {
   final int timestamp;
   final int sunrise;
   final int sunset;
-  final Map<TimeOfDay, double> temp;
+  final Map<TimePeriodOfDay, double> temp;
   final double tempMin;
   final double tempMax;
-  final Map<TimeOfDay, double> feelsLikeTemp;
+  final Map<TimePeriodOfDay, double> feelsLikeTemp;
   final int pressure;
   final int humidity;
   final double windSpeed;
@@ -21,8 +21,9 @@ class WeatherDay {
   final String weatherGroup;
   final String weatherGroupDescription;
   final String weatherGroupIconUrl;
+  final double? rain;
 
-  WeatherDay({
+  const WeatherDay({
     required this.timestamp,
     required this.sunrise,
     required this.sunset,
@@ -39,5 +40,6 @@ class WeatherDay {
     required this.weatherGroup,
     required this.weatherGroupDescription,
     required this.weatherGroupIconUrl,
+    this.rain,
   });
 }
