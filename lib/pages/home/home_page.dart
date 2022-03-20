@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import './widgets/weather_day_item.dart';
 import '../../models/weather_day.dart';
+import '../location_search/location_search_page.dart';
 
 class HomePage extends StatelessWidget {
   static const routeName = '/home';
@@ -96,8 +97,8 @@ class HomePage extends StatelessWidget {
     ),
   ];
 
-  void _onSearchIconPressed() {
-    // TODO: Navigate to search screen
+  void _onSearchIconPressed(BuildContext context) {
+    Navigator.of(context).pushNamed(LocationSearchPage.routeName);
   }
 
   Future<void> _refreshWeatherData() async {
@@ -112,7 +113,7 @@ class HomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _onSearchIconPressed,
+            onPressed: () => _onSearchIconPressed(context),
           )
         ],
       ),

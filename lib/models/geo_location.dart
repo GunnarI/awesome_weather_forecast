@@ -6,7 +6,7 @@ class GeoLocation {
   final List<String> localNames;
   final String? state;
 
-  GeoLocation({
+  const GeoLocation({
     required this.location,
     required this.countryCode,
     required this.latitude,
@@ -14,4 +14,9 @@ class GeoLocation {
     this.localNames=const <String>[],
     this.state,
   });
+
+  @override
+  String toString() {
+    return '$location, $countryCode,${state == null ? '' : ' $state,'} $latitude, $longitude';
+  }
 }
