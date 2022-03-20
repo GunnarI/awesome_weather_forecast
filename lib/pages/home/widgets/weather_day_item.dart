@@ -25,11 +25,11 @@ class WeatherDayItem extends StatelessWidget {
         else if (timePeriodOfDay == TimePeriodOfDay.evening)
           const Text('Evening'),
         Text(
-          '${weatherDay.temp[timePeriodOfDay]}°',
+          '${weatherDay.temp[timePeriodOfDay]!.toStringAsFixed(0)}°',
           style: const TextStyle(fontSize: 32),
         ),
         Text(
-          'Feels like ${weatherDay.feelsLikeTemp[timePeriodOfDay]}°',
+          'Feels like ${weatherDay.feelsLikeTemp[timePeriodOfDay]!.toStringAsFixed(0)}°',
           style: const TextStyle(fontSize: 10),
         ),
       ],
@@ -74,11 +74,11 @@ class WeatherDayItem extends StatelessWidget {
                   const Spacer(
                     flex: 3,
                   ),
-                  Text('Min: ${weatherDay.tempMin}°'),
+                  Text('Min: ${weatherDay.tempMin.toStringAsFixed(0)}°'),
                   const Spacer(
                     flex: 2,
                   ),
-                  Text('Max: ${weatherDay.tempMax}°'),
+                  Text('Max: ${weatherDay.tempMax.toStringAsFixed(0)}°'),
                   const Spacer(
                     flex: 3,
                   ),
@@ -104,14 +104,14 @@ class WeatherDayItem extends StatelessWidget {
                             angle: weatherDay.windDirectionInDegrees * math.pi / 180,
                             child: const Icon(Icons.arrow_circle_down),
                           ),
-                          Text('${weatherDay.windSpeed} m/s'),
+                          Text('${weatherDay.windSpeed.toStringAsPrecision(3)} m/s'),
                         ],
                       ),
                     ],
                   ),
                   Column(
                     children: [
-                      Text('Rain (Prob: ${weatherDay.probabilityOfPrecipitation}%)'),
+                      Text('Rain (Prob: ${(weatherDay.probabilityOfPrecipitation * 100).toStringAsFixed(0)}%)'),
                       Text(weatherDay.rain == null ? 'No rain' : '${weatherDay.rain} mm'),
                     ],
                   ),
