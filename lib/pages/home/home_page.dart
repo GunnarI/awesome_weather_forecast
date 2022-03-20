@@ -1,101 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import './widgets/weather_day_item.dart';
-import '../../models/weather_day.dart';
 import '../location_search/location_search_page.dart';
+import '../home/bloc/home_bloc.dart';
+import '../../providers/geo_location_provider.dart';
+import '../../providers/weather_data_provider.dart';
+import '../../repositories/weather_data_repository.dart';
 
 class HomePage extends StatelessWidget {
   static const routeName = '/home';
 
   const HomePage({Key? key}) : super(key: key);
-
-  // TODO: Remove test lists below
-  static const List<WeatherDay> _weatherDays = [
-    WeatherDay(
-      timestamp: 1647639088,
-      sunrise: 1647639088,
-      sunset: 1647639088,
-      temp: {
-        TimePeriodOfDay.night: 2,
-        TimePeriodOfDay.morning: 4,
-        TimePeriodOfDay.day: 6,
-        TimePeriodOfDay.evening: 8,
-      },
-      tempMin: 2,
-      tempMax: 8,
-      feelsLikeTemp: {
-        TimePeriodOfDay.night: -2,
-        TimePeriodOfDay.morning: -4,
-        TimePeriodOfDay.day: -6,
-        TimePeriodOfDay.evening: -8,
-      },
-      pressure: 10,
-      humidity: 10,
-      windSpeed: 10,
-      windDirectionInDegrees: 90,
-      clouds: 10,
-      probabilityOfPrecipitation: 0.5,
-      weatherGroup: 'Snow',
-      weatherGroupDescription: 'Light snow',
-      weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-    ),
-    WeatherDay(
-      timestamp: 1647639088,
-      sunrise: 1647639088,
-      sunset: 1647639088,
-      temp: {
-        TimePeriodOfDay.night: 2,
-        TimePeriodOfDay.morning: 4,
-        TimePeriodOfDay.day: 6,
-        TimePeriodOfDay.evening: 8,
-      },
-      tempMin: 2,
-      tempMax: 8,
-      feelsLikeTemp: {
-        TimePeriodOfDay.night: -2,
-        TimePeriodOfDay.morning: -4,
-        TimePeriodOfDay.day: -6,
-        TimePeriodOfDay.evening: -8,
-      },
-      pressure: 10,
-      humidity: 10,
-      windSpeed: 10,
-      windDirectionInDegrees: 90,
-      clouds: 10,
-      probabilityOfPrecipitation: 0.5,
-      weatherGroup: 'Snow',
-      weatherGroupDescription: 'Light snow',
-      weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-    ),
-    WeatherDay(
-      timestamp: 1647639088,
-      sunrise: 1647639088,
-      sunset: 1647639088,
-      temp: {
-        TimePeriodOfDay.night: 2,
-        TimePeriodOfDay.morning: 4,
-        TimePeriodOfDay.day: 6,
-        TimePeriodOfDay.evening: 8,
-      },
-      tempMin: 2,
-      tempMax: 8,
-      feelsLikeTemp: {
-        TimePeriodOfDay.night: -2,
-        TimePeriodOfDay.morning: -4,
-        TimePeriodOfDay.day: -6,
-        TimePeriodOfDay.evening: -8,
-      },
-      pressure: 10,
-      humidity: 10,
-      windSpeed: 10,
-      windDirectionInDegrees: 90,
-      clouds: 10,
-      probabilityOfPrecipitation: 0.5,
-      weatherGroup: 'Snow',
-      weatherGroupDescription: 'Light snow',
-      weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-    ),
-  ];
 
   void _onSearchIconPressed(BuildContext context) {
     Navigator.of(context).pushNamed(LocationSearchPage.routeName);
@@ -107,26 +23,61 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Awesome Weather Forecast'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _onSearchIconPressed(context),
-          )
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: RefreshIndicator(
-          child: ListView.builder(
-            itemBuilder: (_, i) => Column(
-              children: [WeatherDayItem(weatherDay: HomePage._weatherDays[i])],
-            ),
-            itemCount: HomePage._weatherDays.length,
+    return BlocProvider(
+      create: (_) => HomeBloc(
+        WeatherDataRepository(
+          geoLocationProvider: GeoLocationProvider(),
+          weatherDataProvider: WeatherDataProvider(),
+        ),
+      )..add(LoadWeatherDays()),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Awesome Weather Forecast'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => _onSearchIconPressed(context),
+            )
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: BlocBuilder<HomeBloc, HomeState>(
+            builder: (context, state) {
+              if (state is LoadingWeatherDaysState) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else {
+                return RefreshIndicator(
+                  onRefresh: _refreshWeatherData,
+                  child: ListView.builder(
+                    itemBuilder: (_, i) {
+                      if (state is LoadedWeatherDaysState) {
+                        return Column(
+                          children: [
+                            WeatherDayItem(weatherDay: state.weatherDays[i])
+                          ],
+                        );
+                      } else if (state is FailedToLoadWeatherDaysState) {
+                        return SizedBox(
+                          height: MediaQuery.of(context).size.height - Scaffold.of(context).appBarMaxHeight!,
+                          child: Center(
+                            child: Text(state.error),
+                          ),
+                        );
+                      } else {
+                        return Container();
+                      }
+                    },
+                    itemCount: state is LoadedWeatherDaysState
+                        ? state.weatherDays.length
+                        : 1,
+                  ),
+                );
+              }
+            },
           ),
-          onRefresh: _refreshWeatherData,
         ),
       ),
     );
