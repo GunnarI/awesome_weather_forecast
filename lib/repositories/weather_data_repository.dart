@@ -1,7 +1,7 @@
-import 'package:awesome_weather_forecast/models/geo_location.dart';
-import 'package:awesome_weather_forecast/models/weather_day.dart';
-import 'package:awesome_weather_forecast/providers/geo_location_provider.dart';
-import 'package:awesome_weather_forecast/providers/weather_data_provider.dart';
+import '/models/geo_location.dart';
+import '/models/weather_day.dart';
+import '/providers/geo_location_provider.dart';
+import '/providers/weather_data_provider.dart';
 
 enum UnitsOfMeasurement {
   metric,
@@ -19,6 +19,7 @@ class WeatherDataRepository {
 
   // TODO: Make this field based on user configuration
   var _unitsOfMeasurementSetting = UnitsOfMeasurement.metric;
+
   /// If the value is an int then it is converted to double and returned, otherways the value is returned as is.
   double _ensureDoubleFromJson(num value) {
     return value is int ? value.toDouble() : value as double;
@@ -37,24 +38,30 @@ class WeatherDataRepository {
 
   Future<List<GeoLocation>> getGeoLocationDataByName(
       String cityName, String? stateCode, String? countryCode) async {
-    final List<dynamic> rawGeoLocationData = await geoLocationProvider
-        .getGeoLocationByName(cityName, stateCode, countryCode);
+    try {
+      final List<dynamic> rawGeoLocationData = await geoLocationProvider
+          .getGeoLocationByName(cityName, stateCode, countryCode);
 
-    // TODO: Create list of GeoLocation from API response
-    return const [
-      GeoLocation(
-        location: 'Reykjavik',
-        countryCode: 'IS',
-        latitude: 64.145981,
-        longitude: -21.9422367,
-      ),
-      GeoLocation(
-        location: 'Akureyri',
-        countryCode: 'IS',
-        latitude: 65.68390355,
-        longitude: -18.11217559813441,
-      ),
-    ];
+      final List<GeoLocation> locationData = [];
+
+      for (var locationRaw in rawGeoLocationData) {
+        locationData.add(
+          GeoLocation(
+            location: locationRaw['name'],
+            countryCode: locationRaw['country'],
+            latitude: locationRaw['lat'],
+            longitude: locationRaw['lon'],
+            localNames: locationRaw['local_names'] is Map<String, dynamic> ? locationRaw['local_names'] : null,
+            state: locationRaw['state']
+          ),
+        );
+      }
+
+      return locationData;
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
   }
 
   Future<List<WeatherDay>> getWeatherDays(
@@ -110,7 +117,7 @@ class WeatherDataRepository {
             weatherGroupDescription: rawWeatherDay['weather'][0]['description'],
             weatherGroupIconUrl:
                 'http://openweathermap.org/img/wn/${rawWeatherDay['weather'][0]['icon']}@2x.png',
-            rain: rawWeatherDay['rain'],
+            rain: rawWeatherDay['rain'] == null ? null : _ensureDoubleFromJson(rawWeatherDay['rain']),
           ),
         );
       }

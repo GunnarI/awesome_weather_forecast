@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import './widgets/weather_day_item.dart';
-import '../location_search/location_search_page.dart';
-import '../home/bloc/home_bloc.dart';
-import '../../providers/geo_location_provider.dart';
-import '../../providers/weather_data_provider.dart';
-import '../../repositories/weather_data_repository.dart';
+import '/pages/home/bloc/home_bloc.dart';
+import '/pages/location_search/location_search_page.dart';
+import 'widgets/weather_day_item.dart';
 
 class HomePage extends StatelessWidget {
   static const routeName = '/home';
@@ -23,14 +20,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => HomeBloc(
-        WeatherDataRepository(
-          geoLocationProvider: GeoLocationProvider(),
-          weatherDataProvider: WeatherDataProvider(),
-        ),
-      )..add(LoadWeatherDays()),
-      child: Scaffold(
+    BlocProvider.of<HomeBloc>(context).add(LoadWeatherDays());
+
+    return Scaffold(
         appBar: AppBar(
           title: const Text('Awesome Weather Forecast'),
           actions: [
@@ -48,6 +40,10 @@ class HomePage extends StatelessWidget {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
+              } else if (state is NoLocationSelectedState) {
+                return const Center(
+                  child: Text('No location selected yet'),
+                );
               } else {
                 return RefreshIndicator(
                   onRefresh: _refreshWeatherData,
@@ -61,7 +57,8 @@ class HomePage extends StatelessWidget {
                         );
                       } else if (state is FailedToLoadWeatherDaysState) {
                         return SizedBox(
-                          height: MediaQuery.of(context).size.height - Scaffold.of(context).appBarMaxHeight!,
+                          height: MediaQuery.of(context).size.height -
+                              Scaffold.of(context).appBarMaxHeight!,
                           child: Center(
                             child: Text(state.error),
                           ),
@@ -79,7 +76,6 @@ class HomePage extends StatelessWidget {
             },
           ),
         ),
-      ),
     );
   }
 }

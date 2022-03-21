@@ -1,13 +1,31 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 
+import '/repositories/weather_data_repository.dart';
+
+import '/models/geo_location.dart';
+
 part 'location_search_event.dart';
 part 'location_search_state.dart';
 
-class LocationSearchBloc extends Bloc<LocationSearchEvent, LocationSearchState> {
-  LocationSearchBloc() : super(LocationSearchInitial()) {
-    on<LocationSearchEvent>((event, emit) {
-      // TODO: implement event handler
-    });
+class LocationSearchBloc
+    extends Bloc<LocationSearchEvent, LocationSearchState> {
+  final WeatherDataRepository repository;
+
+  LocationSearchBloc(
+    this.repository,
+  ) : super(LocationSearchInitial()) {
+    on<LocationSearchEvent>(_onLocationSearchEvent);
+  }
+
+  Future<void> _onLocationSearchEvent(
+      LocationSearchEvent event, Emitter<LocationSearchState> emit) async {
+    if (event is LocationSelectedEvent) {
+      emit(
+        LocationSelectedState(
+          selectedLocation: event.selectedLocation,
+        ),
+      );
+    }
   }
 }

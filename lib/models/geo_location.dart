@@ -3,7 +3,7 @@ class GeoLocation {
   final String countryCode;
   final double latitude;
   final double longitude;
-  final List<String> localNames;
+  final Map<String, dynamic>? localNames;
   final String? state;
 
   const GeoLocation({
@@ -11,7 +11,7 @@ class GeoLocation {
     required this.countryCode,
     required this.latitude,
     required this.longitude,
-    this.localNames=const <String>[],
+    this.localNames=const <String, dynamic>{},
     this.state,
   });
 

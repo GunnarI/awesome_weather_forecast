@@ -22,3 +22,5 @@ class FailedToLoadWeatherDaysState extends HomeState {
     required this.error,
   });
 }
+
+class NoLocationSelectedState extends HomeState {}
