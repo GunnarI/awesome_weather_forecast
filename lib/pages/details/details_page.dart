@@ -7,6 +7,6 @@ class DetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text('DetailsPages'),);
+    return const Center(child: Text('DetailsPages'),);
   }
 }

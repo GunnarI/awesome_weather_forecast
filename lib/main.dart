@@ -1,3 +1,4 @@
+import 'package:awesome_weather_forecast/models/database/local_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +15,7 @@ void main() {
   runApp(
     RepositoryProvider(
       create: (context) => WeatherDataRepository(
+        localDatabase: LocalDatabase(),
         geoLocationProvider: GeoLocationProvider(),
         weatherDataProvider: WeatherDataProvider(),
       ),
@@ -49,9 +51,9 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: HomePage.routeName,
       routes: {
-        HomePage.routeName: (context) => HomePage(),
-        LocationSearchPage.routeName: (context) => LocationSearchPage(),
-        DetailsPage.routeName: (context) => DetailsPage(),
+        HomePage.routeName: (context) => const HomePage(),
+        LocationSearchPage.routeName: (context) => const LocationSearchPage(),
+        DetailsPage.routeName: (context) => const DetailsPage(),
       },
     );
   }

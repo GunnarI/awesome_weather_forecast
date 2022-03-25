@@ -1,5 +1,6 @@
-import '/models/geo_location.dart';
-import '/models/weather_day.dart';
+import 'package:drift/drift.dart';
+
+import '/models/database/local_database.dart';
 import '/providers/geo_location_provider.dart';
 import '/providers/weather_data_provider.dart';
 
@@ -9,21 +10,18 @@ enum UnitsOfMeasurement {
 }
 
 class WeatherDataRepository {
+  final LocalDatabase localDatabase;
   final WeatherDataProvider weatherDataProvider;
   final GeoLocationProvider geoLocationProvider;
 
   WeatherDataRepository({
+    required this.localDatabase,
     required this.weatherDataProvider,
     required this.geoLocationProvider,
   });
 
   // TODO: Make this field based on user configuration
   var _unitsOfMeasurementSetting = UnitsOfMeasurement.metric;
-
-  /// If the value is an int then it is converted to double and returned, otherways the value is returned as is.
-  double _ensureDoubleFromJson(num value) {
-    return value is int ? value.toDouble() : value as double;
-  }
 
   /// Converts temperature values from standard (Kelvin) to celcius or fahrenheit based on settings
   double _parseTempValue(num value) {
@@ -47,12 +45,15 @@ class WeatherDataRepository {
       for (var locationRaw in rawGeoLocationData) {
         locationData.add(
           GeoLocation(
+            id: -1,
             location: locationRaw['name'],
             countryCode: locationRaw['country'],
             latitude: locationRaw['lat'],
             longitude: locationRaw['lon'],
-            localNames: locationRaw['local_names'] is Map<String, dynamic> ? locationRaw['local_names'] : null,
-            state: locationRaw['state']
+            localNames: locationRaw['local_names'] is Map<String, dynamic>
+                ? locationRaw['local_names']
+                : null,
+            state: locationRaw['state'],
           ),
         );
       }
@@ -64,63 +65,72 @@ class WeatherDataRepository {
     }
   }
 
-  Future<List<WeatherDay>> getWeatherDays(
-      double latitude, double longitude) async {
+  Future<int> clearOutdatedCache() {
+    try {
+      return localDatabase.clearOutdatedData();
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
+  }
+
+  Future<List<WeatherDay>> getWeatherDays(GeoLocation geoLocation) async {
     try {
       final Map<String, dynamic> rawDailyForecastData =
-          await weatherDataProvider.getDailyForecast(latitude, longitude);
+          await weatherDataProvider.getDailyForecast(
+              geoLocation.latitude, geoLocation.longitude);
+
+      final timeOfFetchingForecast = DateTime.now().millisecondsSinceEpoch;
 
       final List<dynamic> rawForecastExtractedData =
           rawDailyForecastData['daily'] as List<dynamic>;
       final List<WeatherDay> weatherDays = [];
 
       for (var rawWeatherDay in rawForecastExtractedData) {
-        final Map<TimePeriodOfDay, double> temp = {
-          TimePeriodOfDay.night:
-              _parseTempValue(rawWeatherDay['temp']['night']),
-          TimePeriodOfDay.day: _parseTempValue(rawWeatherDay['temp']['day']),
-          TimePeriodOfDay.evening:
-              _parseTempValue(rawWeatherDay['temp']['eve']),
-          TimePeriodOfDay.morning:
-              _parseTempValue(rawWeatherDay['temp']['morn']),
-        };
-
-        final Map<TimePeriodOfDay, double> feelsLikeTemp = {
-          TimePeriodOfDay.night:
-              _parseTempValue(rawWeatherDay['feels_like']['night']),
-          TimePeriodOfDay.day:
-              _parseTempValue(rawWeatherDay['feels_like']['day']),
-          TimePeriodOfDay.evening:
-              _parseTempValue(rawWeatherDay['feels_like']['eve']),
-          TimePeriodOfDay.morning:
-              _parseTempValue(rawWeatherDay['feels_like']['morn']),
-        };
-
+        Uint8List icon = await weatherDataProvider
+            .getIconBytesFromUrl(rawWeatherDay['weather'][0]['icon']);
         weatherDays.add(
           WeatherDay(
+            id: -1,
+            locationId: geoLocation.id,
+            timeOfStoring: timeOfFetchingForecast,
             timestamp: rawWeatherDay['dt'],
             sunrise: rawWeatherDay['sunrise'],
             sunset: rawWeatherDay['sunset'],
-            temp: temp,
+            tempMorning: _parseTempValue(rawWeatherDay['temp']['morn']),
+            tempDay: _parseTempValue(rawWeatherDay['temp']['day']),
+            tempEvening: _parseTempValue(rawWeatherDay['temp']['eve']),
+            tempNight: _parseTempValue(rawWeatherDay['temp']['night']),
             tempMin: _parseTempValue(rawWeatherDay['temp']['min']),
             tempMax: _parseTempValue(rawWeatherDay['temp']['max']),
-            feelsLikeTemp: feelsLikeTemp,
+            feelsLikeTempMorning:
+                _parseTempValue(rawWeatherDay['feels_like']['morn']),
+            feelsLikeTempDay:
+                _parseTempValue(rawWeatherDay['feels_like']['day']),
+            feelsLikeTempEvening:
+                _parseTempValue(rawWeatherDay['feels_like']['eve']),
+            feelsLikeTempNight:
+                _parseTempValue(rawWeatherDay['feels_like']['night']),
             pressure: rawWeatherDay['pressure'],
             humidity: rawWeatherDay['humidity'],
-            windSpeed: _ensureDoubleFromJson(rawWeatherDay['wind_speed']),
+            windSpeed: (rawWeatherDay['wind_speed'] as num).toDouble(),
             windDirectionInDegrees:
-                _ensureDoubleFromJson(rawWeatherDay['wind_deg']),
+                (rawWeatherDay['wind_deg'] as num).toDouble(),
             clouds: rawWeatherDay['clouds'],
             probabilityOfPrecipitation:
-                _ensureDoubleFromJson(rawWeatherDay['pop']),
+                (rawWeatherDay['pop'] as num).toDouble(),
             weatherGroup: rawWeatherDay['weather'][0]['main'],
             weatherGroupDescription: rawWeatherDay['weather'][0]['description'],
-            weatherGroupIconUrl:
-                'http://openweathermap.org/img/wn/${rawWeatherDay['weather'][0]['icon']}@2x.png',
-            rain: rawWeatherDay['rain'] == null ? null : _ensureDoubleFromJson(rawWeatherDay['rain']),
+            weatherGroupIcon: icon,
+            rain: rawWeatherDay['rain'] == null
+                ? null
+                : (rawWeatherDay['rain'] as num).toDouble(),
           ),
         );
       }
+
+      cacheWeatherDaysData(weatherDays);
+
       return weatherDays;
     } catch (error) {
       // TODO: Do something fancy with the error and then throw something for the bloc to catch
@@ -128,93 +138,49 @@ class WeatherDataRepository {
     }
   }
 
-  Future<List<WeatherDay>> getWeatherDaysFromCache() async {
-    // TODO: Replace below with actual fetching from cache
-    return const [
-      WeatherDay(
-        timestamp: 1647639088,
-        sunrise: 1647639088,
-        sunset: 1647639088,
-        temp: {
-          TimePeriodOfDay.night: 2,
-          TimePeriodOfDay.morning: 4,
-          TimePeriodOfDay.day: 6,
-          TimePeriodOfDay.evening: 8,
-        },
-        tempMin: 2,
-        tempMax: 8,
-        feelsLikeTemp: {
-          TimePeriodOfDay.night: -2,
-          TimePeriodOfDay.morning: -4,
-          TimePeriodOfDay.day: -6,
-          TimePeriodOfDay.evening: -8,
-        },
-        pressure: 10,
-        humidity: 10,
-        windSpeed: 10,
-        windDirectionInDegrees: 90,
-        clouds: 10,
-        probabilityOfPrecipitation: 0.5,
-        weatherGroup: 'Snow',
-        weatherGroupDescription: 'Light snow',
-        weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-      ),
-      WeatherDay(
-        timestamp: 1647639088,
-        sunrise: 1647639088,
-        sunset: 1647639088,
-        temp: {
-          TimePeriodOfDay.night: 2,
-          TimePeriodOfDay.morning: 4,
-          TimePeriodOfDay.day: 6,
-          TimePeriodOfDay.evening: 8,
-        },
-        tempMin: 2,
-        tempMax: 8,
-        feelsLikeTemp: {
-          TimePeriodOfDay.night: -2,
-          TimePeriodOfDay.morning: -4,
-          TimePeriodOfDay.day: -6,
-          TimePeriodOfDay.evening: -8,
-        },
-        pressure: 10,
-        humidity: 10,
-        windSpeed: 10,
-        windDirectionInDegrees: 90,
-        clouds: 10,
-        probabilityOfPrecipitation: 0.5,
-        weatherGroup: 'Snow',
-        weatherGroupDescription: 'Light snow',
-        weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-      ),
-      WeatherDay(
-        timestamp: 1647639088,
-        sunrise: 1647639088,
-        sunset: 1647639088,
-        temp: {
-          TimePeriodOfDay.night: 2,
-          TimePeriodOfDay.morning: 4,
-          TimePeriodOfDay.day: 6,
-          TimePeriodOfDay.evening: 8,
-        },
-        tempMin: 2,
-        tempMax: 8,
-        feelsLikeTemp: {
-          TimePeriodOfDay.night: -2,
-          TimePeriodOfDay.morning: -4,
-          TimePeriodOfDay.day: -6,
-          TimePeriodOfDay.evening: -8,
-        },
-        pressure: 10,
-        humidity: 10,
-        windSpeed: 10,
-        windDirectionInDegrees: 90,
-        clouds: 10,
-        probabilityOfPrecipitation: 0.5,
-        weatherGroup: 'Snow',
-        weatherGroupDescription: 'Light snow',
-        weatherGroupIconUrl: 'http://openweathermap.org/img/wn/13d@2x.png',
-      ),
-    ];
+  Future<GeoLocation> cacheGeoLocationData(GeoLocation geoLocation) {
+    try {
+      return localDatabase.addGeoLocation(geoLocation);
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
+  }
+
+  Future<GeoLocation?> getLatestCachedGeoLocation() {
+    //localDatabase.allGeoLocationEntries.then((value) => print('All geo locations number: ${value.length}'));
+    return localDatabase.getLatestGeoLocation;
+  }
+
+  Future<void> cacheWeatherDaysData(List<WeatherDay> weatherDayList) {
+    try {
+      return localDatabase.addWeatherDays(weatherDayList);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<List<WeatherDay>> getWeatherDaysFromCache(
+      GeoLocation geoLocation) async {
+    try {
+      var locallyStoredWeatherDays =
+          await localDatabase.getWeatherDaysByLocation(geoLocation.id);
+
+      return locallyStoredWeatherDays
+        ..where(
+          (weatherDay) =>
+              DateTime.fromMillisecondsSinceEpoch(weatherDay.timestamp * 1000)
+                  .isAfter(
+            DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            ),
+          ),
+        );
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
   }
 }

@@ -23,59 +23,69 @@ class HomePage extends StatelessWidget {
     BlocProvider.of<HomeBloc>(context).add(LoadWeatherDays());
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Awesome Weather Forecast'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => _onSearchIconPressed(context),
-            )
-          ],
+      appBar: AppBar(
+        title: BlocBuilder<HomeBloc, HomeState>(
+          bloc: BlocProvider.of<HomeBloc>(context),
+          builder: (context, state) {
+            var geoLocation = BlocProvider.of<HomeBloc>(context).geoLocation;
+            if (state is LoadedWeatherDaysState && geoLocation != null) {
+              return Text(geoLocation.location);
+            } else {
+              return const Text('Awesome Weather App');
+            }
+          },
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: BlocBuilder<HomeBloc, HomeState>(
-            builder: (context, state) {
-              if (state is LoadingWeatherDaysState) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              } else if (state is NoLocationSelectedState) {
-                return const Center(
-                  child: Text('No location selected yet'),
-                );
-              } else {
-                return RefreshIndicator(
-                  onRefresh: _refreshWeatherData,
-                  child: ListView.builder(
-                    itemBuilder: (_, i) {
-                      if (state is LoadedWeatherDaysState) {
-                        return Column(
-                          children: [
-                            WeatherDayItem(weatherDay: state.weatherDays[i])
-                          ],
-                        );
-                      } else if (state is FailedToLoadWeatherDaysState) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height -
-                              Scaffold.of(context).appBarMaxHeight!,
-                          child: Center(
-                            child: Text(state.error),
-                          ),
-                        );
-                      } else {
-                        return Container();
-                      }
-                    },
-                    itemCount: state is LoadedWeatherDaysState
-                        ? state.weatherDays.length
-                        : 1,
-                  ),
-                );
-              }
-            },
-          ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => _onSearchIconPressed(context),
+          )
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: BlocBuilder<HomeBloc, HomeState>(
+          builder: (context, state) {
+            if (state is LoadingWeatherDaysState) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            } else if (state is NoLocationSelectedState) {
+              return const Center(
+                child: Text('No location selected yet'),
+              );
+            } else {
+              return RefreshIndicator(
+                onRefresh: _refreshWeatherData,
+                child: ListView.builder(
+                  itemBuilder: (_, i) {
+                    if (state is LoadedWeatherDaysState) {
+                      return Column(
+                        children: [
+                          WeatherDayItem(weatherDay: state.weatherDays[i])
+                        ],
+                      );
+                    } else if (state is FailedToLoadWeatherDaysState) {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height -
+                            Scaffold.of(context).appBarMaxHeight!,
+                        child: Center(
+                          child: Text(state.error),
+                        ),
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
+                  itemCount: state is LoadedWeatherDaysState
+                      ? state.weatherDays.length
+                      : 1,
+                ),
+              );
+            }
+          },
         ),
+      ),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 import '/repositories/weather_data_repository.dart';
-import '/models/geo_location.dart';
+import '/models/database/local_database.dart';
 import 'bloc/location_search_bloc.dart';
 
 class LocationSearchPage extends StatelessWidget {
@@ -15,15 +15,18 @@ class LocationSearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Search location'),
+        title: const Text('Search location'),
       ),
       body: TypeAheadField<GeoLocation>(
         keepSuggestionsOnLoading: false,
         suggestionsCallback: (searchValue) async {
           if (searchValue.isEmpty) return [];
           // TODO: Make sure it is also possible to search by other params (e.g. lat, lon, country)
-          return await RepositoryProvider.of<WeatherDataRepository>(context).getGeoLocationDataByName(
+          // TODO: Move below logic into the bloc and make sure errors in search are handled.
+          var suggestionList = await RepositoryProvider.of<WeatherDataRepository>(context).getGeoLocationDataByName(
               searchValue, null, null);
+          BlocProvider.of<LocationSearchBloc>(context).add(OptionsLoadingEvent(locationOptions: suggestionList));
+          return suggestionList;
         },
         itemBuilder: (context, locationSuggestion) {
           return ListTile(

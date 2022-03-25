@@ -3,7 +3,14 @@ import 'dart:math' as math;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
-import '../../../models/weather_day.dart';
+import '/models/database/local_database.dart';
+
+enum TimePeriodOfDay {
+  morning,
+  day,
+  evening,
+  night,
+}
 
 class WeatherDayItem extends StatelessWidget {
   final WeatherDay weatherDay;
@@ -14,26 +21,57 @@ class WeatherDayItem extends StatelessWidget {
   }) : super(key: key);
 
   Widget _temperatureWidget(TimePeriodOfDay timePeriodOfDay) {
-    return Column(
-      children: [
-        if (timePeriodOfDay == TimePeriodOfDay.night)
-          const Text('Night')
-        else if (timePeriodOfDay == TimePeriodOfDay.morning)
-          const Text('Morning')
-        else if (timePeriodOfDay == TimePeriodOfDay.day)
-          const Text('Day')
-        else if (timePeriodOfDay == TimePeriodOfDay.evening)
-          const Text('Evening'),
+    if (timePeriodOfDay == TimePeriodOfDay.night) {
+      return Column(children: [
+        const Text('Night'),
         Text(
-          '${weatherDay.temp[timePeriodOfDay]!.toStringAsFixed(0)}°',
+          '${weatherDay.tempNight.toStringAsFixed(0)}°',
           style: const TextStyle(fontSize: 32),
         ),
         Text(
-          'Feels like ${weatherDay.feelsLikeTemp[timePeriodOfDay]!.toStringAsFixed(0)}°',
+          'Feels like ${weatherDay.feelsLikeTempNight.toStringAsFixed(0)}°',
           style: const TextStyle(fontSize: 10),
         ),
-      ],
-    );
+      ]);
+    } else if (timePeriodOfDay == TimePeriodOfDay.morning) {
+      return Column(children: [
+        const Text('Morning'),
+        Text(
+          '${weatherDay.tempMorning.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 32),
+        ),
+        Text(
+          'Feels like ${weatherDay.feelsLikeTempMorning.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 10),
+        ),
+      ]);
+    } else if (timePeriodOfDay == TimePeriodOfDay.day) {
+      return Column(children: [
+        const Text('Day'),
+        Text(
+          '${weatherDay.tempDay.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 32),
+        ),
+        Text(
+          'Feels like ${weatherDay.feelsLikeTempDay.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 10),
+        ),
+      ]);
+    } else if (timePeriodOfDay == TimePeriodOfDay.evening) {
+      return Column(children: [
+        const Text('Evening'),
+        Text(
+          '${weatherDay.tempDay.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 32),
+        ),
+        Text(
+          'Feels like ${weatherDay.feelsLikeTempDay.toStringAsFixed(0)}°',
+          style: const TextStyle(fontSize: 10),
+        ),
+      ]);
+    } else {
+      return Container();
+    }
   }
 
   @override
@@ -53,8 +91,8 @@ class WeatherDayItem extends StatelessWidget {
                       DateTime.fromMillisecondsSinceEpoch(
                           weatherDay.timestamp * 1000))),
                   const Spacer(),
-                  Image.network(
-                    weatherDay.weatherGroupIconUrl,
+                  Image.memory(
+                    weatherDay.weatherGroupIcon,
                     fit: BoxFit.cover,
                   ),
                   Text(weatherDay.weatherGroupDescription),
@@ -101,18 +139,24 @@ class WeatherDayItem extends StatelessWidget {
                       Row(
                         children: [
                           Transform.rotate(
-                            angle: weatherDay.windDirectionInDegrees * math.pi / 180,
+                            angle: weatherDay.windDirectionInDegrees *
+                                math.pi /
+                                180,
                             child: const Icon(Icons.arrow_circle_down),
                           ),
-                          Text('${weatherDay.windSpeed.toStringAsPrecision(3)} m/s'),
+                          Text(
+                              '${weatherDay.windSpeed.toStringAsPrecision(3)} m/s'),
                         ],
                       ),
                     ],
                   ),
                   Column(
                     children: [
-                      Text('Rain (Prob: ${(weatherDay.probabilityOfPrecipitation * 100).toStringAsFixed(0)}%)'),
-                      Text(weatherDay.rain == null ? 'No rain' : '${weatherDay.rain} mm'),
+                      Text(
+                          'Rain (Prob: ${(weatherDay.probabilityOfPrecipitation * 100).toStringAsFixed(0)}%)'),
+                      Text(weatherDay.rain == null
+                          ? 'No rain'
+                          : '${weatherDay.rain} mm'),
                     ],
                   ),
                   Column(

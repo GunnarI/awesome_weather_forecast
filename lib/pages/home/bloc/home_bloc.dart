@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 
-import '/models/geo_location.dart';
-import '/models/weather_day.dart';
+import '/models/database/local_database.dart'; //import '/models/geo_locations.dart';
+//import '/models/weather_days.dart';
 import '/pages/location_search/bloc/location_search_bloc.dart';
 import '/repositories/weather_data_repository.dart';
 
@@ -34,23 +34,39 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _onHomeEvent(HomeEvent event, Emitter<HomeState> emit) async {
     if (event is SearchLocationEvent) {
-      // TODO: Handle search location event
+      // TODO: Handle search location event by checking internet access before navigation
     } else if (event is LoadWeatherDays) {
+      emit(LoadingWeatherDaysState());
+
+      await repository.clearOutdatedCache();
+
       if (geoLocation == null) {
-        emit(NoLocationSelectedState());
-      } else {
-        emit(LoadingWeatherDaysState());
-        // TODO: Try to fetch from local storage if less than 12 hours since refresh otherwise fetch from API
         try {
-          final weatherDays = await repository.getWeatherDays(
-              geoLocation!.latitude, geoLocation!.longitude);
-          emit(LoadedWeatherDaysState(weatherDays: weatherDays));
+          geoLocation = await repository.getLatestCachedGeoLocation();
+          if (geoLocation == null) {
+            emit(NoLocationSelectedState());
+            return;
+          }
         } catch (error) {
-          // TODO: Display different relevant errors based on the error message
-          print(error);
-          emit(FailedToLoadWeatherDaysState(
-              error: 'Oops! Something went wrong... try again later.'));
+          rethrow;
         }
+      }
+
+      var weatherDays = <WeatherDay>[];
+      try {
+        weatherDays = await repository.getWeatherDaysFromCache(geoLocation!);
+
+        if (weatherDays.isEmpty) {
+          weatherDays = await repository.getWeatherDays(geoLocation!);
+        }
+
+        emit(LoadedWeatherDaysState(weatherDays: weatherDays));
+      } catch (error) {
+        emit(
+          FailedToLoadWeatherDaysState(
+              error:
+                  'Oops! Something went wrong... try refreshing or try again later.'),
+        );
       }
     } else if (event is RefreshWeatherDays) {
       // TODO: Fetch days from API

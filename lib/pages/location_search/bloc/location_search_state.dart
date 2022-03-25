@@ -12,3 +12,5 @@ class LocationSelectedState extends LocationSearchState {
     required this.selectedLocation,
   });
 }
+
+class ErrorSelectingLocation extends LocationSearchState {}
