@@ -68,8 +68,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                   'Oops! Something went wrong... try refreshing or try again later.'),
         );
       }
-    } else if (event is RefreshWeatherDays) {
-      // TODO: Fetch days from API
     }
   }
 }

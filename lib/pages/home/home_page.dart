@@ -14,8 +14,16 @@ class HomePage extends StatelessWidget {
     Navigator.of(context).pushNamed(LocationSearchPage.routeName);
   }
 
-  Future<void> _refreshWeatherData() async {
-    // TODO: Reload data from API
+  Future<void> _refreshWeatherData(BuildContext context) async {
+    var geoLocation = BlocProvider.of<HomeBloc>(context).geoLocation;
+
+    if (geoLocation != null) {
+      await BlocProvider.of<HomeBloc>(context)
+          .repository
+          .getWeatherDays(geoLocation);
+    }
+
+    return;
   }
 
   @override
@@ -56,7 +64,7 @@ class HomePage extends StatelessWidget {
               );
             } else {
               return RefreshIndicator(
-                onRefresh: _refreshWeatherData,
+                onRefresh: () => _refreshWeatherData(context),
                 child: ListView.builder(
                   itemBuilder: (_, i) {
                     if (state is LoadedWeatherDaysState) {
