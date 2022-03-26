@@ -5,4 +5,10 @@ abstract class HomeEvent {}
 
 class SearchLocationEvent extends HomeEvent {}
 
-class LoadWeatherDays extends HomeEvent {}
+class LoadWeatherDaysEvent extends HomeEvent {}
+
+class NavigateToDetailsEvent extends HomeEvent {
+  final WeatherDay weatherDay;
+
+  NavigateToDetailsEvent({required this.weatherDay});
+}

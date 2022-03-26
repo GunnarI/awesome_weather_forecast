@@ -7,11 +7,12 @@ import 'package:path/path.dart' as p;
 
 import '/models/geo_locations.dart';
 import '/models/weather_days.dart';
+import '/models/weather_hours.dart';
 
 part 'local_database.g.dart';
 
 @DriftDatabase(
-  tables: [WeatherDays, GeoLocations],
+  tables: [WeatherDays, WeatherHours, GeoLocations],
   queries: {
     'latestCachedLocation':
         'SELECT * FROM geo_locations WHERE id = (SELECT MAX(id) FROM geo_locations);',
@@ -26,6 +27,7 @@ class LocalDatabase extends _$LocalDatabase {
   int get schemaVersion => 1;
 
   Future<GeoLocation> addGeoLocation(GeoLocation geoLocation) async {
+    // TODO: Fix bug where geo location is not returned correctly if it is previously stored
     try {
       var returnGeoLocation = await into(geoLocations).insertReturning(
         GeoLocationsCompanion(
@@ -112,13 +114,55 @@ class LocalDatabase extends _$LocalDatabase {
         .get();
   }
 
-  Future<int> clearOutdatedData() async {
-    return await (delete(weatherDays)
+  Future<void> addWeatherHours(List<WeatherHour> weatherHourList) async {
+    List<WeatherHoursCompanion> entries = [];
+
+    for (var weatherHour in weatherHourList) {
+      entries.add(
+        WeatherHoursCompanion(
+          locationId: Value(weatherHour.locationId),
+          timeOfStoring: Value(weatherHour.timeOfStoring),
+          timestamp: Value(weatherHour.timestamp),
+          temp: Value(weatherHour.temp),
+          feelsLikeTemp: Value(weatherHour.feelsLikeTemp),
+          pressure: Value(weatherHour.pressure),
+          humidity: Value(weatherHour.humidity),
+          windSpeed: Value(weatherHour.windSpeed),
+          windDirectionInDegrees: Value(weatherHour.windDirectionInDegrees),
+          clouds: Value(weatherHour.clouds),
+          probabilityOfPrecipitation:
+              Value(weatherHour.probabilityOfPrecipitation),
+          weatherGroup: Value(weatherHour.weatherGroup),
+          weatherGroupDescription: Value(weatherHour.weatherGroupDescription),
+          weatherGroupIcon: Value(weatherHour.weatherGroupIcon),
+        ),
+      );
+    }
+
+    return batch((batch) => batch.insertAll(weatherHours, entries,
+        mode: InsertMode.insertOrReplace));
+  }
+
+  Future<List<WeatherHour>> getWeatherHoursByLocationAndTimeRange(
+      int locationId, int startTime, int endTime) {
+    return (select(weatherHours)
+          ..where((tbl) =>
+              tbl.locationId.equals(locationId) &
+              tbl.timestamp.isBetweenValues(startTime, endTime)))
+        .get();
+  }
+
+  Future<void> clearOutdatedData() async {
+    (delete(weatherDays)
           ..where((tbl) => tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
               .subtract(const Duration(hours: 12))
               .millisecondsSinceEpoch)))
         .go();
-    // return deleteUnusedLocations(); // TODO: Fix this, the SQL statement is not working. Until then locations are not removed from cache.
+    (delete(weatherHours)
+          ..where((tbl) => tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
+              .subtract(const Duration(hours: 12))
+              .millisecondsSinceEpoch)))
+        .go();
   }
 }
 

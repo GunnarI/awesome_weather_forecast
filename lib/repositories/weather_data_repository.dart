@@ -23,6 +23,9 @@ class WeatherDataRepository {
   // TODO: Make this field based on user configuration
   var _unitsOfMeasurementSetting = UnitsOfMeasurement.metric;
 
+  GeoLocation? selectedGeoLocation;
+  WeatherDay? selectedWeatherDay;
+
   /// Converts temperature values from standard (Kelvin) to celcius or fahrenheit based on settings
   double _parseTempValue(num value) {
     double parsedValue;
@@ -65,7 +68,7 @@ class WeatherDataRepository {
     }
   }
 
-  Future<int> clearOutdatedCache() {
+  Future<void> clearOutdatedCache() {
     try {
       return localDatabase.clearOutdatedData();
     } catch (error) {
@@ -76,17 +79,18 @@ class WeatherDataRepository {
 
   Future<List<WeatherDay>> getWeatherDays(GeoLocation geoLocation) async {
     try {
-      final Map<String, dynamic> rawDailyForecastData =
-          await weatherDataProvider.getDailyForecast(
-              geoLocation.latitude, geoLocation.longitude);
+      final Map<String, dynamic> rawForecastData = await weatherDataProvider
+          .getDailyForecast(geoLocation.latitude, geoLocation.longitude);
 
       final timeOfFetchingForecast = DateTime.now().millisecondsSinceEpoch;
 
-      final List<dynamic> rawForecastExtractedData =
-          rawDailyForecastData['daily'] as List<dynamic>;
-      final List<WeatherDay> weatherDays = [];
+      final List<dynamic> rawDailyForecastData = rawForecastData['daily'];
+      final List<dynamic> rawHourlyForecastData = rawForecastData['hourly'];
 
-      for (var rawWeatherDay in rawForecastExtractedData) {
+      final List<WeatherDay> weatherDays = [];
+      final List<WeatherHour> weatherHours = [];
+
+      for (var rawWeatherDay in rawDailyForecastData) {
         Uint8List icon = await weatherDataProvider
             .getIconBytesFromUrl(rawWeatherDay['weather'][0]['icon']);
         weatherDays.add(
@@ -129,7 +133,35 @@ class WeatherDataRepository {
         );
       }
 
+      for (var rawWeatherHour in rawHourlyForecastData) {
+        Uint8List icon = await weatherDataProvider
+            .getIconBytesFromUrl(rawWeatherHour['weather'][0]['icon']);
+        weatherHours.add(
+          WeatherHour(
+            id: -1,
+            locationId: geoLocation.id,
+            timeOfStoring: timeOfFetchingForecast,
+            timestamp: rawWeatherHour['dt'],
+            temp: _parseTempValue(rawWeatherHour['temp']),
+            feelsLikeTemp: _parseTempValue(rawWeatherHour['feels_like']),
+            pressure: rawWeatherHour['pressure'],
+            humidity: rawWeatherHour['humidity'],
+            windSpeed: (rawWeatherHour['wind_speed'] as num).toDouble(),
+            windDirectionInDegrees:
+                (rawWeatherHour['wind_deg'] as num).toDouble(),
+            clouds: rawWeatherHour['clouds'],
+            probabilityOfPrecipitation:
+                (rawWeatherHour['pop'] as num).toDouble(),
+            weatherGroup: rawWeatherHour['weather'][0]['main'],
+            weatherGroupDescription: rawWeatherHour['weather'][0]
+                ['description'],
+            weatherGroupIcon: icon,
+          ),
+        );
+      }
+
       cacheWeatherDaysData(weatherDays);
+      cacheWeatherHoursData(weatherHours);
 
       return weatherDays;
     } catch (error) {
@@ -148,13 +180,20 @@ class WeatherDataRepository {
   }
 
   Future<GeoLocation?> getLatestCachedGeoLocation() {
-    //localDatabase.allGeoLocationEntries.then((value) => print('All geo locations number: ${value.length}'));
     return localDatabase.getLatestGeoLocation;
   }
 
   Future<void> cacheWeatherDaysData(List<WeatherDay> weatherDayList) {
     try {
       return localDatabase.addWeatherDays(weatherDayList);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> cacheWeatherHoursData(List<WeatherHour> weatherHourList) {
+    try {
+      return localDatabase.addWeatherHours(weatherHourList);
     } catch (error) {
       rethrow;
     }
@@ -178,6 +217,17 @@ class WeatherDataRepository {
             ),
           ),
         );
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
+  }
+
+  Future<List<WeatherHour>> getWeatherHoursFromCache(
+      GeoLocation geoLocation, int startTime, int endTime) {
+    try {
+      return localDatabase.getWeatherHoursByLocationAndTimeRange(
+          geoLocation.id, startTime, endTime);
     } catch (error) {
       // TODO: Do something fancy with the error and then throw something for the bloc to catch
       rethrow;

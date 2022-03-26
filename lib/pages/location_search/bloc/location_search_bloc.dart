@@ -22,12 +22,9 @@ class LocationSearchBloc
       LocationSearchEvent event, Emitter<LocationSearchState> emit) async {
     if (event is LocationSelectedEvent) {
       try {
-        var geoLocation =
-            await repository.cacheGeoLocationData(event.selectedLocation);
+        repository.selectedGeoLocation = await repository.cacheGeoLocationData(event.selectedLocation);
         emit(
-          LocationSelectedState(
-            selectedLocation: geoLocation,
-          ),
+          LocationSelectedState(),
         );
       } catch (error) {
         emit(ErrorSelectingLocation());

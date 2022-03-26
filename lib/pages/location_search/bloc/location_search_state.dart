@@ -5,12 +5,6 @@ abstract class LocationSearchState {}
 
 class LocationSearchInitial extends LocationSearchState {}
 
-class LocationSelectedState extends LocationSearchState {
-  final GeoLocation selectedLocation;
-
-  LocationSelectedState({
-    required this.selectedLocation,
-  });
-}
+class LocationSelectedState extends LocationSearchState {}
 
 class ErrorSelectingLocation extends LocationSearchState {}

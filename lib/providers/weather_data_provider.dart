@@ -16,7 +16,7 @@ class WeatherDataProvider {
   /// 
   /// See _Current and forecast weather data_ at https://openweathermap.org/api/one-call-api for more details.
   Future<Map<String, dynamic>> getDailyForecast(double latitude, double longitude) async {
-    const exclusions = 'current,minutely,hourly,alerts';
+    const exclusions = 'current,minutely,alerts';
 
     final url = Uri.parse(
       '$_baseUrl?lat=$latitude&lon=$longitude&exclude=$exclusions&appid=$_apiKey'

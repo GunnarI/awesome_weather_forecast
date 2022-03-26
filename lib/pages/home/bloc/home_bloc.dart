@@ -17,33 +17,31 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   late final StreamSubscription locationSearchSubscription;
 
-  GeoLocation? geoLocation;
-
   HomeBloc(
     this.repository,
     this.locationSearchBloc,
   ) : super(HomeInitial()) {
     locationSearchSubscription = locationSearchBloc.stream.listen((state) {
       if (state is LocationSelectedState) {
-        geoLocation = state.selectedLocation;
-        add(LoadWeatherDays());
+        add(LoadWeatherDaysEvent());
       }
     });
     on<HomeEvent>(_onHomeEvent);
+    on<NavigateToDetailsEvent>(((event, emit) => repository.selectedWeatherDay = event.weatherDay));
   }
 
   Future<void> _onHomeEvent(HomeEvent event, Emitter<HomeState> emit) async {
     if (event is SearchLocationEvent) {
       // TODO: Handle search location event by checking internet access before navigation
-    } else if (event is LoadWeatherDays) {
+    } else if (event is LoadWeatherDaysEvent) {
       emit(LoadingWeatherDaysState());
 
       await repository.clearOutdatedCache();
 
-      if (geoLocation == null) {
+      if (repository.selectedGeoLocation == null) {
         try {
-          geoLocation = await repository.getLatestCachedGeoLocation();
-          if (geoLocation == null) {
+          repository.selectedGeoLocation = await repository.getLatestCachedGeoLocation();
+          if (repository.selectedGeoLocation == null) {
             emit(NoLocationSelectedState());
             return;
           }
@@ -54,10 +52,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       var weatherDays = <WeatherDay>[];
       try {
-        weatherDays = await repository.getWeatherDaysFromCache(geoLocation!);
+        weatherDays = await repository.getWeatherDaysFromCache(repository.selectedGeoLocation!);
 
         if (weatherDays.isEmpty) {
-          weatherDays = await repository.getWeatherDays(geoLocation!);
+          weatherDays = await repository.getWeatherDays(repository.selectedGeoLocation!);
         }
 
         emit(LoadedWeatherDaysState(weatherDays: weatherDays));
