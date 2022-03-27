@@ -68,6 +68,36 @@ class WeatherDataRepository {
     }
   }
 
+  Future<List<GeoLocation>> getGeoLocationDataByLatLon(double latitude, double longitude) async {
+    try {
+      final List<dynamic> rawGeoLocationData = await geoLocationProvider
+          .getGeoLocationByLatitudeLongitude(latitude, longitude);
+
+      final List<GeoLocation> locationData = [];
+
+      for (var locationRaw in rawGeoLocationData) {
+        locationData.add(
+          GeoLocation(
+            id: -1,
+            location: locationRaw['name'],
+            countryCode: locationRaw['country'],
+            latitude: locationRaw['lat'],
+            longitude: locationRaw['lon'],
+            localNames: locationRaw['local_names'] is Map<String, dynamic>
+                ? locationRaw['local_names']
+                : null,
+            state: locationRaw['state'],
+          ),
+        );
+      }
+
+      return locationData;
+    } catch (error) {
+      // TODO: Do something fancy with the error and then throw something for the bloc to catch
+      rethrow;
+    }
+  }
+
   Future<void> clearOutdatedCache() {
     try {
       return localDatabase.clearOutdatedData();
@@ -133,6 +163,7 @@ class WeatherDataRepository {
         );
       }
 
+      // TODO: Speed up loading by fetching hourly weather on isolated thread
       for (var rawWeatherHour in rawHourlyForecastData) {
         Uint8List icon = await weatherDataProvider
             .getIconBytesFromUrl(rawWeatherHour['weather'][0]['icon']);
@@ -160,6 +191,7 @@ class WeatherDataRepository {
         );
       }
 
+      // TODO: Speed up loading by caching on an isolated thread
       cacheWeatherDaysData(weatherDays);
       cacheWeatherHoursData(weatherHours);
 
