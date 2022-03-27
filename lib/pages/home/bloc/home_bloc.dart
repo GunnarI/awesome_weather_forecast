@@ -30,9 +30,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onHomeEvent(HomeEvent event, Emitter<HomeState> emit) async {
-    if (event is SearchLocationEvent) {
-      // TODO: Handle search location event by checking internet access before navigation
-    } else if (event is LoadWeatherDaysEvent) {
+    if (event is LoadWeatherDaysEvent) {
       emit(LoadingWeatherDaysState());
 
       await repository.clearOutdatedCache();

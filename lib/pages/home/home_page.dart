@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,8 +14,33 @@ class HomePage extends StatelessWidget {
 
   const HomePage({Key? key}) : super(key: key);
 
-  void _onSearchIconPressed(BuildContext context) {
-    Navigator.of(context).pushNamed(LocationSearchPage.routeName);
+  void _onSearchIconPressed(BuildContext context) async {
+    // TODO: Move this logic into the bloc
+    try {
+      final testApiAccess =
+          await InternetAddress.lookup('api.openweathermap.org');
+      if (testApiAccess.isNotEmpty && testApiAccess[0].rawAddress.isNotEmpty) {
+        Navigator.of(context).pushNamed(LocationSearchPage.routeName);
+      } else {
+        ScaffoldMessenger.of(context)
+          ..removeCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Location API is unavailable so no location search available.'),
+            ),
+          );
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content:
+                Text('Location API is unavailable so no location search available.'),
+          ),
+        );
+    }
   }
 
   void _onListItemPressed(
@@ -50,7 +77,32 @@ class HomePage extends StatelessWidget {
   }
 
   Future<void> _refreshWeatherData(BuildContext context) async {
-    var geoLocation =
+    // TODO: Move some of this logic into the bloc
+    try {
+final testApiAccess =
+          await InternetAddress.lookup('api.openweathermap.org');
+      if (testApiAccess.isEmpty || testApiAccess[0].rawAddress.isEmpty) {
+        ScaffoldMessenger.of(context)
+            ..removeCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('Weather API is unavailable so data could not be refreshed.'),
+              ),
+            );
+        return;
+      }
+    } catch (error) {
+      ScaffoldMessenger.of(context)
+            ..removeCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('Weather API is unavailable so data could not be refreshed.'),
+              ),
+            );
+      return;
+    }
+
+    final geoLocation =
         BlocProvider.of<HomeBloc>(context).repository.selectedGeoLocation;
 
     if (geoLocation != null) {
@@ -62,8 +114,13 @@ class HomePage extends StatelessWidget {
         BlocProvider.of<HomeBloc>(context)
             .add(RefreshEvent(weatherDays: newWeatherDays));
       } catch (error) {
-        // TODO: Handle error gracefully
-        rethrow;
+        ScaffoldMessenger.of(context)
+            ..removeCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('Error fetching weather data.'),
+              ),
+            );
       }
     }
 
