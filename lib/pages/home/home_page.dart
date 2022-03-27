@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '/pages/home/bloc/home_bloc.dart';
 import '/pages/location_search/location_search_page.dart';
 import '/pages/details/details_page.dart';
+import '/pages/details/bloc/details_bloc.dart';
 import 'widgets/weather_day_item.dart';
 
 class HomePage extends StatelessWidget {
@@ -15,12 +16,36 @@ class HomePage extends StatelessWidget {
     Navigator.of(context).pushNamed(LocationSearchPage.routeName);
   }
 
-  void _onListItemPressed(BuildContext context, HomeState state, int index) {
+  void _onListItemPressed(
+      BuildContext context, HomeState state, int index) async {
     if (state is LoadedWeatherDaysState) {
       context
           .read<HomeBloc>()
           .add(NavigateToDetailsEvent(weatherDay: state.weatherDays[index]));
-      Navigator.of(context).pushNamed(DetailsPage.routeName);
+
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      BlocProvider.of<DetailsBloc>(context).add(LoadWeatherHoursEvent());
+      final response =
+          await Navigator.of(context).pushNamed(DetailsPage.routeName);
+      if (response is LoadErrorCase) {
+        if (response == LoadErrorCase.noDataAvailable) {
+          ScaffoldMessenger.of(context)
+            ..removeCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('No details data available for this item'),
+              ),
+            );
+        } else if (response == LoadErrorCase.errorFetchingFromStorage) {
+          ScaffoldMessenger.of(context)
+            ..removeCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('Could not fetch details for this item'),
+              ),
+            );
+        }
+      }
     }
   }
 

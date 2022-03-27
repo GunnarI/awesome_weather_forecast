@@ -13,4 +13,8 @@ class LoadedWeatherHoursState extends DetailsState {
   LoadedWeatherHoursState({required this.weatherHours});
 }
 
-class FailedToLoadWeatherHoursState extends DetailsState {}
+class FailedToLoadWeatherHoursState extends DetailsState {
+  final LoadErrorCase error;
+
+  FailedToLoadWeatherHoursState({required this.error});
+}

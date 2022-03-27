@@ -21,8 +21,6 @@ class DetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    BlocProvider.of<DetailsBloc>(context).add(LoadWeatherHoursEvent());
-
     Map<ColumnName, double> columnWidthSetting = {
       ColumnName.hour:
           (MediaQuery.of(context).size.width - 16.0) * (2.0 / 16.0),
@@ -49,6 +47,7 @@ class DetailsPage extends StatelessWidget {
               child: CircularProgressIndicator(),
             );
           } else if (state is FailedToLoadWeatherHoursState) {
+            Navigator.of(context).pop(state.error);
             return const Center(
               child: Text(
                   'Something went wrong in fetching data... please try again later!'),
@@ -61,13 +60,13 @@ class DetailsPage extends StatelessWidget {
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.only(top: 16.0),
+                    padding: const EdgeInsets.only(top: 16.0),
                     child: Text(
                       DateFormat('EEE, dd/MM/yyyy').format( // TODO: Make date format based on locale
                         DateTime.fromMillisecondsSinceEpoch(
                             state.weatherHours.first.timestamp * 1000),
                       ),
-                      style: TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 18),
                     ),
                   ),
                   Padding(
