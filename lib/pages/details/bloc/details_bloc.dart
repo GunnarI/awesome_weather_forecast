@@ -22,6 +22,7 @@ class DetailsBloc extends Bloc<DetailsEvent, DetailsState> {
       DetailsEvent event, Emitter<DetailsState> emit) async {
     if (event is LoadWeatherHoursEvent) {
       emit(LoadingWeatherHoursState());
+      // TODO: Handle the case where hourly data is not available for the day
 
       var weatherHours = <WeatherHour>[];
       try {
