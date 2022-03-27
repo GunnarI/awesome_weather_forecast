@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Awesome Weather Forecast',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.deepPurple,
       ),
       initialRoute: HomePage.routeName,
       routes: {
