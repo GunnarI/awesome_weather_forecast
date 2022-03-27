@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '/models/geo_locations.dart';
 import '/models/weather_days.dart';
 import '/models/weather_hours.dart';
+import '/utils/utility.dart';
 
 part 'local_database.g.dart';
 
@@ -27,15 +28,15 @@ class LocalDatabase extends _$LocalDatabase {
   int get schemaVersion => 1;
 
   Future<GeoLocation> addGeoLocation(GeoLocation geoLocation) async {
-    // TODO: Fix bug where geo location is not returned correctly if it is previously stored
     try {
       var returnGeoLocation = await into(geoLocations).insertReturning(
         GeoLocationsCompanion(
           location: Value(geoLocation.location),
           countryCode: Value(geoLocation.countryCode),
-          latitude: Value((geoLocation.latitude * 1000).roundToDouble() / 1000),
+          latitude:
+              Value(Utility.roundDoubleToPrecision(geoLocation.latitude, 3)),
           longitude:
-              Value((geoLocation.longitude * 1000).roundToDouble() / 1000),
+              Value(Utility.roundDoubleToPrecision(geoLocation.longitude, 3)),
           localNames: Value(geoLocation.localNames),
           state: Value(geoLocation.state),
         ),
@@ -58,7 +59,13 @@ class LocalDatabase extends _$LocalDatabase {
   Future<GeoLocation> getGeoLocationByLatLon(
       double latitude, double longitude) async {
     var geoLocation = await (select(geoLocations)
-          ..where((tbl) => tbl.latitude.equals(latitude))
+          ..where(
+            (tbl) =>
+                tbl.latitude
+                    .equals(Utility.roundDoubleToPrecision(latitude, 3)) &
+                tbl.longitude
+                    .equals(Utility.roundDoubleToPrecision(longitude, 3)),
+          )
           ..limit(1))
         .get();
     return geoLocation.first;
