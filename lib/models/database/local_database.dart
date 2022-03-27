@@ -154,14 +154,26 @@ class LocalDatabase extends _$LocalDatabase {
 
   Future<void> clearOutdatedData() async {
     (delete(weatherDays)
-          ..where((tbl) => tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
-              .subtract(const Duration(hours: 12))
-              .millisecondsSinceEpoch)))
+          ..where(
+            (tbl) =>
+                tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
+                    .subtract(const Duration(hours: 12))
+                    .millisecondsSinceEpoch) |
+                tbl.timestamp.isSmallerThanValue(DateTime(DateTime.now().year,
+                            DateTime.now().month, DateTime.now().day)
+                        .millisecondsSinceEpoch ~/
+                    1000),
+          ))
         .go();
     (delete(weatherHours)
-          ..where((tbl) => tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
-              .subtract(const Duration(hours: 12))
-              .millisecondsSinceEpoch)))
+          ..where(
+            (tbl) =>
+                tbl.timeOfStoring.isSmallerThanValue(DateTime.now()
+                    .subtract(const Duration(hours: 12))
+                    .millisecondsSinceEpoch) |
+                tbl.timestamp.isSmallerThanValue(
+                    DateTime.now().millisecondsSinceEpoch ~/ 1000),
+          ))
         .go();
   }
 }

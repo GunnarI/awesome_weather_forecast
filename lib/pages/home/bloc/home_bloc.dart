@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 
-import '/models/database/local_database.dart'; //import '/models/geo_locations.dart';
-//import '/models/weather_days.dart';
+import '/models/database/local_database.dart';
 import '/pages/location_search/bloc/location_search_bloc.dart';
 import '/repositories/weather_data_repository.dart';
 
@@ -65,6 +64,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               error:
                   'Oops! Something went wrong... try refreshing or try again later.'),
         );
+      }
+    } else if (event is RefreshEvent) {
+      if (event.weatherDays.isNotEmpty) {
+        emit(LoadedWeatherDaysState(weatherDays: event.weatherDays));
       }
     }
   }

@@ -29,9 +29,17 @@ class HomePage extends StatelessWidget {
         BlocProvider.of<HomeBloc>(context).repository.selectedGeoLocation;
 
     if (geoLocation != null) {
-      await BlocProvider.of<HomeBloc>(context)
-          .repository
-          .getWeatherDays(geoLocation);
+      try {
+        var newWeatherDays = await BlocProvider.of<HomeBloc>(context)
+            .repository
+            .getWeatherDays(geoLocation);
+
+        BlocProvider.of<HomeBloc>(context)
+            .add(RefreshEvent(weatherDays: newWeatherDays));
+      } catch (error) {
+        // TODO: Handle error gracefully
+        rethrow;
+      }
     }
 
     return;

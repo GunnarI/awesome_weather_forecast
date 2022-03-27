@@ -12,3 +12,9 @@ class NavigateToDetailsEvent extends HomeEvent {
 
   NavigateToDetailsEvent({required this.weatherDay});
 }
+
+class RefreshEvent extends HomeEvent {
+  final List<WeatherDay> weatherDays;
+
+  RefreshEvent({required this.weatherDays});
+}
